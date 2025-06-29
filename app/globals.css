@@ -296,3 +296,93 @@
 .cyber-button:hover::before {
   left: 100%;
 }
+
+/* Markdown Content Styles */
+.markdown-content {
+  line-height: 1.6;
+}
+
+.markdown-content h1,
+.markdown-content h2,
+.markdown-content h3,
+.markdown-content h4,
+.markdown-content h5,
+.markdown-content h6 {
+  font-family: 'Orbitron', monospace;
+  font-weight: 700;
+}
+
+.markdown-content pre {
+  margin: 0;
+  padding: 0;
+  background: transparent;
+}
+
+.markdown-content code {
+  font-family: 'Fira Code', monospace;
+}
+
+.markdown-content table {
+  font-family: 'Fira Code', monospace;
+  font-size: 0.9em;
+}
+
+.markdown-content blockquote {
+  font-family: 'Fira Code', monospace;
+}
+
+/* Syntax Highlighter Overrides */
+.markdown-content .token.comment,
+.markdown-content .token.prolog,
+.markdown-content .token.doctype,
+.markdown-content .token.cdata {
+  color: #6a9955 !important;
+}
+
+.markdown-content .token.punctuation {
+  color: #d4d4d4 !important;
+}
+
+.markdown-content .token.property,
+.markdown-content .token.tag,
+.markdown-content .token.boolean,
+.markdown-content .token.number,
+.markdown-content .token.constant,
+.markdown-content .token.symbol,
+.markdown-content .token.deleted {
+  color: #b5cea8 !important;
+}
+
+.markdown-content .token.selector,
+.markdown-content .token.attr-name,
+.markdown-content .token.string,
+.markdown-content .token.char,
+.markdown-content .token.builtin,
+.markdown-content .token.inserted {
+  color: #ce9178 !important;
+}
+
+.markdown-content .token.operator,
+.markdown-content .token.entity,
+.markdown-content .token.url,
+.markdown-content .language-css .token.string,
+.markdown-content .style .token.string {
+  color: #d4d4d4 !important;
+}
+
+.markdown-content .token.atrule,
+.markdown-content .token.attr-value,
+.markdown-content .token.keyword {
+  color: #569cd6 !important;
+}
+
+.markdown-content .token.function,
+.markdown-content .token.class-name {
+  color: #dcdcaa !important;
+}
+
+.markdown-content .token.regex,
+.markdown-content .token.important,
+.markdown-content .token.variable {
+  color: #d16969 !important;
+}

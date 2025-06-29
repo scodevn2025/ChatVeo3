@@ -9,6 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import VideoGenerator from '@/components/VideoGenerator';
+import MarkdownRenderer from '@/components/MarkdownRenderer';
 import { 
   Send, 
   Bot, 
@@ -206,7 +207,7 @@ export default function CyberMindChat() {
               </Badge>
               <Badge variant="outline" className="border-purple-400 text-purple-400 neon-border">
                 <Brain className="h-3 w-3 mr-1" />
-                THINKING MODE
+                MARKDOWN READY
               </Badge>
             </div>
             <div className="flex items-center space-x-2">
@@ -296,8 +297,17 @@ export default function CyberMindChat() {
                           message.role === 'user'
                             ? 'bg-purple-500/10 border-purple-400/30 text-purple-100'
                             : 'bg-cyan-500/10 border-cyan-400/30 text-cyan-100'
-                        } font-fira-code text-sm leading-relaxed`}>
-                          {message.content}
+                        } text-sm leading-relaxed`}>
+                          {message.role === 'assistant' ? (
+                            <MarkdownRenderer 
+                              content={message.content}
+                              className="font-fira-code"
+                            />
+                          ) : (
+                            <div className="font-fira-code">
+                              {message.content}
+                            </div>
+                          )}
                           {isLoading && index === messages.length - 1 && message.role === 'user' && (
                             <div className="mt-2 text-cyan-400">
                               <Activity className="h-4 w-4 animate-spin inline mr-2" />
@@ -370,7 +380,7 @@ export default function CyberMindChat() {
               <div className="flex items-center space-x-4 text-xs text-gray-500">
                 <span className="flex items-center space-x-1">
                   <Zap className="h-3 w-3" />
-                  <span>Powered by Gemini 2.5 Pro with Thinking</span>
+                  <span>Powered by Gemini 2.5 Pro with Markdown Support</span>
                 </span>
                 <Separator orientation="vertical" className="h-3" />
                 <span className="pulse-neon">Enhanced Neural Link Active</span>
