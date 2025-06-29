@@ -9,10 +9,6 @@ const nextConfig = {
   trailingSlash: true,
   // Enable static export for Netlify
   output: 'export',
-  // Disable server-side features for static export
-  experimental: {
-    serverComponentsExternalPackages: ['@google/generative-ai']
-  },
   // Configure for Netlify deployment
   distDir: 'out',
 };
