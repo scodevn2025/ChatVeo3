@@ -3,13 +3,18 @@ const nextConfig = {
   eslint: {
     ignoreDuringBuilds: true,
   },
-  images: { unoptimized: true },
-  // Remove output: 'export' if it exists to allow API routes
+  images: { 
+    unoptimized: true 
+  },
   trailingSlash: true,
-  // Ensure API routes work properly
+  // Enable static export for Netlify
+  output: 'export',
+  // Disable server-side features for static export
   experimental: {
     serverComponentsExternalPackages: ['@google/generative-ai']
-  }
+  },
+  // Configure for Netlify deployment
+  distDir: 'out',
 };
 
 module.exports = nextConfig;

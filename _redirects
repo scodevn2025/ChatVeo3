@@ -1,0 +1,7 @@
+# Netlify redirects for SPA routing
+/*    /index.html   200
+
+# API redirects to Netlify functions
+/api/chat    /.netlify/functions/chat    200
+/api/generate-video    /.netlify/functions/generate-video    200
+/api/check-video-status    /.netlify/functions/check-video-status    200

@@ -49,7 +49,12 @@ export default function VideoGenerator() {
     setIsGenerating(true);
     
     try {
-      const response = await fetch('/api/generate-video', {
+      // Use Netlify function endpoint
+      const apiUrl = window.location.hostname === 'localhost' 
+        ? '/api/generate-video' 
+        : '/.netlify/functions/generate-video';
+
+      const response = await fetch(apiUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -88,65 +93,41 @@ export default function VideoGenerator() {
       setOperations(prev => [newOperation, ...prev]);
       setPrompt('');
       
-      // Start polling for status
-      pollVideoStatus(newOperation);
-
-    } catch (error) {
-      console.error('Error:', error);
-    } finally {
-      setIsGenerating(false);
-    }
-  };
-
-  const pollVideoStatus = async (operation: VideoOperation) => {
-    const checkStatus = async () => {
-      try {
-        const response = await fetch('/api/check-video-status', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            operationName: operation.operationName
-          }),
-        });
-
-        if (!response.ok) {
-          throw new Error('Failed to check status');
-        }
-
-        const statusData = await response.json();
-        
-        if (statusData.done) {
-          const videoUrls = statusData.response?.videos?.map((video: any) => video.gcsUri) || [];
-          setOperations(prev => 
-            prev.map(op => 
-              op.operationName === operation.operationName
-                ? {
-                    ...op,
-                    status: videoUrls.length > 0 ? 'completed' : 'failed',
-                    videoUrls: videoUrls
-                  }
-                : op
-            )
-          );
-        } else {
-          // Continue polling if not done
-          setTimeout(checkStatus, 5000);
-        }
-      } catch (error) {
-        console.error('Status check error:', error);
+      // Start polling for status (mock for demo)
+      setTimeout(() => {
         setOperations(prev => 
           prev.map(op => 
-            op.operationName === operation.operationName
-              ? { ...op, status: 'failed' }
+            op.operationName === newOperation.operationName
+              ? {
+                  ...op,
+                  status: 'completed',
+                  videoUrls: ['https://example.com/mock-video.mp4']
+                }
               : op
           )
         );
-      }
-    };
+      }, 3000);
 
-    checkStatus();
+    } catch (error) {
+      console.error('Error:', error);
+      setOperations(prev => [
+        {
+          operationName: `mock-error-${Date.now()}`,
+          prompt: prompt.trim(),
+          status: 'failed',
+          startTime: new Date(),
+          settings: {
+            duration,
+            aspectRatio,
+            sampleCount,
+            generateAudio
+          }
+        },
+        ...prev
+      ]);
+    } finally {
+      setIsGenerating(false);
+    }
   };
 
   const formatTime = (date: Date) => {
@@ -189,8 +170,14 @@ export default function VideoGenerator() {
             VEO 3.0 VIDEO SYNTHESIS
           </h2>
           <Badge variant="outline" className="border-purple-400 text-purple-400 neon-border ml-2">
-            PREVIEW
+            DEMO MODE
           </Badge>
+        </div>
+        
+        <div className="p-4 mb-4 border border-yellow-400/30 rounded-lg bg-yellow-500/5">
+          <p className="text-sm text-yellow-400 font-mono">
+            ⚠️ VIDEO SYNTHESIS: Currently in demo mode. Full video generation requires Google Cloud authentication setup.
+          </p>
         </div>
         
         <div className="space-y-4">
@@ -304,7 +291,7 @@ export default function VideoGenerator() {
               ) : (
                 <>
                   <Play className="h-4 w-4 mr-2" />
-                  GENERATE VIDEO
+                  GENERATE VIDEO (DEMO)
                 </>
               )}
             </Button>
@@ -359,10 +346,10 @@ export default function VideoGenerator() {
                             size="sm"
                             variant="outline"
                             className="cyber-button border-green-400 text-green-400 hover:bg-green-400/10"
-                            onClick={() => window.open(url, '_blank')}
+                            onClick={() => alert('Demo mode: Video download not available')}
                           >
                             <Download className="h-3 w-3 mr-1" />
-                            VIDEO {idx + 1}
+                            VIDEO {idx + 1} (DEMO)
                           </Button>
                         ))}
                       </div>
@@ -378,7 +365,7 @@ export default function VideoGenerator() {
                     {operation.status === 'failed' && (
                       <div className="flex items-center space-x-2 text-xs text-red-400">
                         <AlertCircle className="h-3 w-3" />
-                        <span>Synthesis failed - check parameters and try again</span>
+                        <span>Synthesis failed - demo mode active</span>
                       </div>
                     )}
                   </div>

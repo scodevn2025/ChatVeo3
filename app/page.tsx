@@ -41,7 +41,6 @@ export default function CyberMindChat() {
   ]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [isTyping, setIsTyping] = useState(false);
   const [activeTab, setActiveTab] = useState('chat');
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -73,10 +72,14 @@ export default function CyberMindChat() {
     setMessages(prev => [...prev, userMessage]);
     setInput('');
     setIsLoading(true);
-    setIsTyping(true);
 
     try {
-      const response = await fetch('/api/chat', {
+      // Use Netlify function endpoint
+      const apiUrl = window.location.hostname === 'localhost' 
+        ? '/api/chat' 
+        : '/.netlify/functions/chat';
+
+      const response = await fetch(apiUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -88,64 +91,31 @@ export default function CyberMindChat() {
       });
 
       if (!response.ok) {
-        throw new Error('Failed to get response');
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || 'Failed to get response');
       }
 
-      const reader = response.body?.getReader();
-      if (!reader) throw new Error('No reader available');
-
+      const data = await response.json();
+      
       const assistantMessage: Message = {
         id: (Date.now() + 1).toString(),
-        content: '',
+        content: data.content || 'ERROR: No response received from CYBERMIND.',
         role: 'assistant',
         timestamp: new Date()
       };
 
       setMessages(prev => [...prev, assistantMessage]);
 
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-
-        const chunk = new TextDecoder().decode(value);
-        const lines = chunk.split('\n');
-
-        for (const line of lines) {
-          if (line.startsWith('data: ')) {
-            const data = line.slice(6);
-            if (data === '[DONE]') {
-              setIsTyping(false);
-              break;
-            }
-            
-            try {
-              const parsed = JSON.parse(data);
-              if (parsed.content) {
-                setMessages(prev => 
-                  prev.map(msg => 
-                    msg.id === assistantMessage.id 
-                      ? { ...msg, content: msg.content + parsed.content }
-                      : msg
-                  )
-                );
-              }
-            } catch (e) {
-              // Ignore parsing errors
-            }
-          }
-        }
-      }
     } catch (error) {
       console.error('Error:', error);
       setMessages(prev => [...prev, {
         id: (Date.now() + 1).toString(),
-        content: 'ERROR: CONNECTION TO CYBERMIND FAILED. SYSTEM MALFUNCTION DETECTED.',
+        content: `ERROR: CONNECTION TO CYBERMIND FAILED. ${error instanceof Error ? error.message : 'SYSTEM MALFUNCTION DETECTED.'}`,
         role: 'assistant',
         timestamp: new Date()
       }]);
     } finally {
       setIsLoading(false);
-      setIsTyping(false);
     }
   };
 
@@ -265,8 +235,11 @@ export default function CyberMindChat() {
                             : 'bg-cyan-500/10 border-cyan-400/30 text-cyan-100'
                         } font-fira-code text-sm leading-relaxed`}>
                           {message.content}
-                          {isTyping && index === messages.length - 1 && message.role === 'assistant' && (
-                            <span className="typing-indicator"></span>
+                          {isLoading && index === messages.length - 1 && message.role === 'user' && (
+                            <div className="mt-2 text-cyan-400">
+                              <Activity className="h-4 w-4 animate-spin inline mr-2" />
+                              Processing neural pathways...
+                            </div>
                           )}
                         </div>
                       </div>
@@ -323,7 +296,7 @@ export default function CyberMindChat() {
               <div className="flex items-center space-x-4 text-xs text-gray-500">
                 <span className="flex items-center space-x-1">
                   <Zap className="h-3 w-3" />
-                  <span>Powered by Gemini 2.5-Pro & Veo</span>
+                  <span>Powered by Gemini 2.0-Flash & Netlify</span>
                 </span>
                 <Separator orientation="vertical" className="h-3" />
                 <span className="pulse-neon">Neural Link Active</span>
