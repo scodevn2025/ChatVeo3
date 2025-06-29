@@ -61,43 +61,67 @@ export default function CyberMindChat() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!input.trim() || isLoading) return;
+    
+    const trimmedInput = input.trim();
+    if (!trimmedInput || isLoading) {
+      console.log('Input empty or loading:', { trimmedInput, isLoading });
+      return;
+    }
+
+    console.log('Submitting message:', trimmedInput);
 
     const userMessage: Message = {
       id: Date.now().toString(),
-      content: input.trim(),
+      content: trimmedInput,
       role: 'user',
       timestamp: new Date()
     };
 
     setMessages(prev => [...prev, userMessage]);
-    const currentInput = input.trim();
     setInput('');
     setIsLoading(true);
 
     try {
-      // Use Netlify function endpoint
-      const apiUrl = window.location.hostname === 'localhost' 
-        ? '/.netlify/functions/chat' 
-        : '/.netlify/functions/chat';
+      console.log('Making API request...');
+      
+      // Always use Netlify function endpoint
+      const apiUrl = '/.netlify/functions/chat';
+      
+      const requestBody = {
+        message: trimmedInput,
+        history: messages
+      };
+      
+      console.log('Request URL:', apiUrl);
+      console.log('Request body:', requestBody);
 
       const response = await fetch(apiUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          message: currentInput,
-          history: messages
-        }),
+        body: JSON.stringify(requestBody),
       });
 
+      console.log('Response status:', response.status);
+      console.log('Response headers:', response.headers);
+
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
+        const errorText = await response.text();
+        console.error('Response error:', errorText);
+        
+        let errorData;
+        try {
+          errorData = JSON.parse(errorText);
+        } catch {
+          errorData = { error: errorText };
+        }
+        
         throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
       }
 
       const data = await response.json();
+      console.log('Response data:', data);
       
       const assistantMessage: Message = {
         id: (Date.now() + 1).toString(),
@@ -109,16 +133,18 @@ export default function CyberMindChat() {
       setMessages(prev => [...prev, assistantMessage]);
 
     } catch (error) {
-      console.error('Error:', error);
+      console.error('Error details:', error);
       
       let errorMessage = 'CONNECTION TO CYBERMIND FAILED.';
       if (error instanceof Error) {
-        if (error.message.includes('API key')) {
+        if (error.message.includes('API key') || error.message.includes('401')) {
           errorMessage = 'NEURAL LINK AUTHENTICATION FAILED. API KEY REQUIRED.';
-        } else if (error.message.includes('quota') || error.message.includes('limit')) {
+        } else if (error.message.includes('quota') || error.message.includes('limit') || error.message.includes('429')) {
           errorMessage = 'CYBERMIND PROCESSING CAPACITY EXCEEDED. TRY AGAIN LATER.';
-        } else if (error.message.includes('model')) {
+        } else if (error.message.includes('model') || error.message.includes('400')) {
           errorMessage = 'NEURAL MODEL UNAVAILABLE. SYSTEM RECALIBRATION REQUIRED.';
+        } else if (error.message.includes('Failed to fetch') || error.message.includes('NetworkError')) {
+          errorMessage = 'NETWORK CONNECTION FAILED. CHECK YOUR CONNECTION.';
         } else {
           errorMessage = `SYSTEM MALFUNCTION: ${error.message}`;
         }
@@ -136,6 +162,7 @@ export default function CyberMindChat() {
   };
 
   const clearChat = () => {
+    console.log('Clearing chat...');
     setMessages([{
       id: '1',
       content: 'SYSTEM REINITIALIZED. MEMORY BANKS CLEARED. CYBERMIND AI READY WITH ENHANCED NEURAL PROCESSING.',
@@ -150,6 +177,12 @@ export default function CyberMindChat() {
       hour: '2-digit',
       minute: '2-digit'
     });
+  };
+
+  // Test button click handler
+  const handleTestClick = () => {
+    console.log('Test button clicked!');
+    alert('Button click is working!');
   };
 
   return (
@@ -175,6 +208,14 @@ export default function CyberMindChat() {
               </Badge>
             </div>
             <div className="flex items-center space-x-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleTestClick}
+                className="cyber-button border-yellow-400 text-yellow-400 hover:bg-yellow-400/10"
+              >
+                TEST CLICK
+              </Button>
               <Button
                 variant="outline"
                 size="sm"
@@ -289,6 +330,12 @@ export default function CyberMindChat() {
                   placeholder="Enter your query into the enhanced neural network..."
                   disabled={isLoading}
                   className="terminal-input pr-12 h-12 font-fira-code text-cyan-400 placeholder:text-cyan-400/50"
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                      e.preventDefault();
+                      handleSubmit(e);
+                    }
+                  }}
                 />
                 <div className="absolute right-3 top-3">
                   <Cpu className="h-5 w-5 text-cyan-400/50" />
@@ -297,7 +344,12 @@ export default function CyberMindChat() {
               <Button
                 type="submit"
                 disabled={isLoading || !input.trim()}
-                className="cyber-button h-12 px-6"
+                onClick={(e) => {
+                  console.log('Button clicked!', { isLoading, inputValue: input.trim() });
+                  handleSubmit(e);
+                }}
+                className="cyber-button h-12 px-6 cursor-pointer"
+                style={{ pointerEvents: 'auto' }}
               >
                 {isLoading ? (
                   <>
