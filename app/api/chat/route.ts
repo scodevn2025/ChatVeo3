@@ -33,8 +33,9 @@ export async function POST(req: NextRequest) {
   try {
     const { message, history } = await req.json();
 
-    if (!process.env.GOOGLE_AI_API_KEY || process.env.GOOGLE_AI_API_KEY === 'your_google_ai_api_key_here') {
-      console.error('Google AI API key not configured properly');
+    // Check if API key is configured
+    if (!process.env.GOOGLE_AI_API_KEY) {
+      console.error('Google AI API key not found in environment variables');
       return NextResponse.json(
         { 
           error: 'Google AI API key not configured. Please set GOOGLE_AI_API_KEY in your .env.local file.',
@@ -58,12 +59,6 @@ export async function POST(req: NextRequest) {
         parts: [{ text: msg.content }]
       }));
 
-    // Add the current message
-    conversationHistory.push({
-      role: 'user',
-      parts: [{ text: message }]
-    });
-
     // Add cyberpunk system prompt
     const systemPrompt = `You are CYBERMIND AI, an advanced artificial intelligence operating in a cyberpunk world. 
     You should respond in a style that fits the cyberpunk aesthetic - sophisticated, sometimes using tech terminology, 
@@ -86,47 +81,40 @@ export async function POST(req: NextRequest) {
           role: 'model',
           parts: [{ text: 'CYBERMIND AI initialized. Neural networks online. Ready to assist you in navigating the digital realm.' }]
         },
-        ...conversationHistory.slice(0, -1) // Exclude the current message since we'll send it separately
+        ...conversationHistory
       ]
     });
 
-    const result = await chat.sendMessageStream(message);
+    const result = await chat.sendMessage(message);
+    const response = await result.response;
+    const text = response.text();
 
-    // Create a readable stream for the response
-    const encoder = new TextEncoder();
-    const stream = new ReadableStream({
-      async start(controller) {
-        try {
-          for await (const chunk of result.stream) {
-            const chunkText = chunk.text();
-            if (chunkText) {
-              const data = JSON.stringify({ content: chunkText });
-              controller.enqueue(encoder.encode(`data: ${data}\n\n`));
-            }
-          }
-          controller.enqueue(encoder.encode('data: [DONE]\n\n'));
-          controller.close();
-        } catch (error) {
-          console.error('Stream error:', error);
-          controller.error(error);
-        }
-      }
-    });
-
-    return new Response(stream, {
-      headers: {
-        'Content-Type': 'text/event-stream',
-        'Cache-Control': 'no-cache',
-        'Connection': 'keep-alive',
-      },
-    });
+    return NextResponse.json({ content: text });
 
   } catch (error) {
     console.error('API Error:', error);
+    
+    // Provide more specific error messages
+    let errorMessage = 'Failed to process request';
+    let errorDetails = 'Unknown error occurred';
+    
+    if (error instanceof Error) {
+      errorDetails = error.message;
+      
+      // Check for specific API key related errors
+      if (error.message.includes('API_KEY_INVALID') || error.message.includes('invalid API key')) {
+        errorMessage = 'Invalid Google AI API key';
+        errorDetails = 'Please check your GOOGLE_AI_API_KEY in .env.local file';
+      } else if (error.message.includes('quota') || error.message.includes('limit')) {
+        errorMessage = 'API quota exceeded';
+        errorDetails = 'Please check your Google AI API usage limits';
+      }
+    }
+    
     return NextResponse.json(
       { 
-        error: 'Failed to process request',
-        details: error instanceof Error ? error.message : 'Unknown error occurred'
+        error: errorMessage,
+        details: errorDetails
       },
       { status: 500 }
     );

@@ -70,29 +70,25 @@ export default function CyberMindChat() {
     };
 
     setMessages(prev => [...prev, userMessage]);
+    const currentInput = input.trim();
     setInput('');
     setIsLoading(true);
 
     try {
-      // Use Netlify function endpoint
-      const apiUrl = window.location.hostname === 'localhost' 
-        ? '/api/chat' 
-        : '/.netlify/functions/chat';
-
-      const response = await fetch(apiUrl, {
+      const response = await fetch('/api/chat', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          message: input.trim(),
+          message: currentInput,
           history: messages
         }),
       });
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.error || 'Failed to get response');
+        throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
       }
 
       const data = await response.json();
@@ -108,9 +104,21 @@ export default function CyberMindChat() {
 
     } catch (error) {
       console.error('Error:', error);
+      
+      let errorMessage = 'CONNECTION TO CYBERMIND FAILED.';
+      if (error instanceof Error) {
+        if (error.message.includes('API key')) {
+          errorMessage = 'NEURAL LINK AUTHENTICATION FAILED. API KEY REQUIRED.';
+        } else if (error.message.includes('quota') || error.message.includes('limit')) {
+          errorMessage = 'CYBERMIND PROCESSING CAPACITY EXCEEDED. TRY AGAIN LATER.';
+        } else {
+          errorMessage = `SYSTEM MALFUNCTION: ${error.message}`;
+        }
+      }
+      
       setMessages(prev => [...prev, {
         id: (Date.now() + 1).toString(),
-        content: `ERROR: CONNECTION TO CYBERMIND FAILED. ${error instanceof Error ? error.message : 'SYSTEM MALFUNCTION DETECTED.'}`,
+        content: `ERROR: ${errorMessage}`,
         role: 'assistant',
         timestamp: new Date()
       }]);
