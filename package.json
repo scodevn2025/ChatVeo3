@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "next dev",
     "clean": "rm -rf .next/cache out",
-    "build": "npm run clean && next build",
+    "build": "npm run clean && mkdir -p out/cache/webpack/server-development out/cache/webpack/client-development && next build",
     "start": "next start",
     "lint": "next lint",
     "export": "next build && next export"
