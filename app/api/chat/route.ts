@@ -32,9 +32,13 @@ export async function POST(req: NextRequest) {
   try {
     const { message, history } = await req.json();
 
-    if (!process.env.GOOGLE_AI_API_KEY) {
+    if (!process.env.GOOGLE_AI_API_KEY || process.env.GOOGLE_AI_API_KEY === 'your_google_ai_api_key_here') {
+      console.error('Google AI API key not configured properly');
       return NextResponse.json(
-        { error: 'Google AI API key not configured' },
+        { 
+          error: 'Google AI API key not configured. Please set GOOGLE_AI_API_KEY in your .env.local file.',
+          details: 'Visit https://aistudio.google.com/app/apikey to get your API key'
+        },
         { status: 500 }
       );
     }
@@ -118,7 +122,10 @@ export async function POST(req: NextRequest) {
   } catch (error) {
     console.error('API Error:', error);
     return NextResponse.json(
-      { error: 'Failed to process request' },
+      { 
+        error: 'Failed to process request',
+        details: error instanceof Error ? error.message : 'Unknown error occurred'
+      },
       { status: 500 }
     );
   }
