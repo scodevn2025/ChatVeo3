@@ -15,6 +15,10 @@ const nextConfig = {
   },
   // Configure for Netlify deployment
   distDir: 'out',
+  // Disable API routes for static export
+  async rewrites() {
+    return [];
+  },
 };
 
 module.exports = nextConfig;
