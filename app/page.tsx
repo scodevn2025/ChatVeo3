@@ -84,8 +84,10 @@ export default function CyberMindChat() {
     try {
       console.log('Making API request...');
       
-      // Always use Netlify function endpoint
-      const apiUrl = '/.netlify/functions/chat';
+      // Use conditional routing like VideoGenerator component
+      const apiUrl = window.location.hostname === 'localhost' 
+        ? '/api/chat' 
+        : '/.netlify/functions/chat';
       
       const requestBody = {
         message: trimmedInput,
