@@ -1,32 +1,4 @@
-const { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold } = require('@google/generative-ai');
-
-// Initialize the Google AI with your API key
-const genAI = new GoogleGenerativeAI(process.env.GOOGLE_AI_API_KEY || '');
-
-const generationConfig = {
-  maxOutputTokens: 65535,
-  temperature: 1,
-  topP: 1,
-};
-
-const safetySettings = [
-  {
-    category: HarmCategory.HARM_CATEGORY_HATE_SPEECH,
-    threshold: HarmBlockThreshold.BLOCK_NONE,
-  },
-  {
-    category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT,
-    threshold: HarmBlockThreshold.BLOCK_NONE,
-  },
-  {
-    category: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT,
-    threshold: HarmBlockThreshold.BLOCK_NONE,
-  },
-  {
-    category: HarmCategory.HARM_CATEGORY_HARASSMENT,
-    threshold: HarmBlockThreshold.BLOCK_NONE,
-  }
-];
+const { GoogleGenAI } = require('@google/genai');
 
 exports.handler = async (event, context) => {
   // Handle CORS
@@ -68,11 +40,21 @@ exports.handler = async (event, context) => {
       };
     }
 
-    const model = genAI.getGenerativeModel({ 
-      model: 'gemini-2.0-flash-exp',
-      generationConfig,
-      safetySettings
+    // Initialize the new Google GenAI client
+    const ai = new GoogleGenAI({
+      apiKey: process.env.GOOGLE_AI_API_KEY,
     });
+
+    // Configuration with thinking capabilities
+    const config = {
+      thinkingConfig: {
+        thinkingBudget: -1, // Unlimited thinking budget
+      },
+      responseMimeType: 'text/plain',
+      maxOutputTokens: 65535,
+      temperature: 1,
+      topP: 1,
+    };
 
     // Build conversation history for context
     const conversationHistory = history
@@ -94,37 +76,66 @@ exports.handler = async (event, context) => {
     - "Initializing response protocols..."
     - But don't overdo it - remain genuinely helpful and informative.`;
 
-    const chat = model.startChat({
-      history: [
-        {
-          role: 'user',
-          parts: [{ text: systemPrompt }]
-        },
-        {
-          role: 'model',
-          parts: [{ text: 'CYBERMIND AI initialized. Neural networks online. Ready to assist you in navigating the digital realm.' }]
-        },
-        ...conversationHistory
-      ]
+    // Prepare contents array with system prompt and conversation history
+    const contents = [
+      {
+        role: 'user',
+        parts: [{ text: systemPrompt }]
+      },
+      {
+        role: 'model',
+        parts: [{ text: 'CYBERMIND AI initialized. Neural networks online. Ready to assist you in navigating the digital realm.' }]
+      },
+      ...conversationHistory,
+      {
+        role: 'user',
+        parts: [{ text: message }]
+      }
+    ];
+
+    // Generate response using the new API
+    const response = await ai.models.generateContentStream({
+      model: 'gemini-2.5-pro',
+      config,
+      contents,
     });
 
-    const result = await chat.sendMessage(message);
-    const response = await result.response;
-    const text = response.text();
+    let fullResponse = '';
+    for await (const chunk of response) {
+      if (chunk.text) {
+        fullResponse += chunk.text;
+      }
+    }
 
     return {
       statusCode: 200,
       headers,
-      body: JSON.stringify({ content: text }),
+      body: JSON.stringify({ content: fullResponse }),
     };
 
   } catch (error) {
     console.error('API Error:', error);
+    
+    // Handle specific error types
+    let errorMessage = 'Failed to process request';
+    let statusCode = 500;
+    
+    if (error.message && error.message.includes('API key')) {
+      errorMessage = 'Invalid API key configuration';
+      statusCode = 401;
+    } else if (error.message && error.message.includes('quota')) {
+      errorMessage = 'API quota exceeded';
+      statusCode = 429;
+    } else if (error.message && error.message.includes('model')) {
+      errorMessage = 'Model not available or invalid';
+      statusCode = 400;
+    }
+    
     return {
-      statusCode: 500,
+      statusCode,
       headers,
       body: JSON.stringify({
-        error: 'Failed to process request',
+        error: errorMessage,
         details: error.message || 'Unknown error occurred'
       }),
     };

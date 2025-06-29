@@ -20,7 +20,8 @@ import {
   Trash2,
   Settings,
   MessageSquare,
-  Video
+  Video,
+  Brain
 } from 'lucide-react';
 
 interface Message {
@@ -34,7 +35,7 @@ export default function CyberMindChat() {
   const [messages, setMessages] = useState<Message[]>([
     {
       id: '1',
-      content: 'SYSTEM INITIALIZED. CYBERMIND AI ONLINE. How can I assist you in the digital realm?',
+      content: 'SYSTEM INITIALIZED. CYBERMIND AI ONLINE. Neural pathways activated with enhanced thinking capabilities. How can I assist you in the digital realm?',
       role: 'assistant',
       timestamp: new Date()
     }
@@ -75,7 +76,12 @@ export default function CyberMindChat() {
     setIsLoading(true);
 
     try {
-      const response = await fetch('/api/chat', {
+      // Use Netlify function endpoint
+      const apiUrl = window.location.hostname === 'localhost' 
+        ? '/.netlify/functions/chat' 
+        : '/.netlify/functions/chat';
+
+      const response = await fetch(apiUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -111,6 +117,8 @@ export default function CyberMindChat() {
           errorMessage = 'NEURAL LINK AUTHENTICATION FAILED. API KEY REQUIRED.';
         } else if (error.message.includes('quota') || error.message.includes('limit')) {
           errorMessage = 'CYBERMIND PROCESSING CAPACITY EXCEEDED. TRY AGAIN LATER.';
+        } else if (error.message.includes('model')) {
+          errorMessage = 'NEURAL MODEL UNAVAILABLE. SYSTEM RECALIBRATION REQUIRED.';
         } else {
           errorMessage = `SYSTEM MALFUNCTION: ${error.message}`;
         }
@@ -130,7 +138,7 @@ export default function CyberMindChat() {
   const clearChat = () => {
     setMessages([{
       id: '1',
-      content: 'SYSTEM REINITIALIZED. MEMORY BANKS CLEARED. CYBERMIND AI READY.',
+      content: 'SYSTEM REINITIALIZED. MEMORY BANKS CLEARED. CYBERMIND AI READY WITH ENHANCED NEURAL PROCESSING.',
       role: 'assistant',
       timestamp: new Date()
     }]);
@@ -160,6 +168,10 @@ export default function CyberMindChat() {
               <Badge variant="outline" className="border-green-400 text-green-400 neon-border">
                 <Activity className="h-3 w-3 mr-1" />
                 ONLINE
+              </Badge>
+              <Badge variant="outline" className="border-purple-400 text-purple-400 neon-border">
+                <Brain className="h-3 w-3 mr-1" />
+                THINKING MODE
               </Badge>
             </div>
             <div className="flex items-center space-x-2">
@@ -246,7 +258,7 @@ export default function CyberMindChat() {
                           {isLoading && index === messages.length - 1 && message.role === 'user' && (
                             <div className="mt-2 text-cyan-400">
                               <Activity className="h-4 w-4 animate-spin inline mr-2" />
-                              Processing neural pathways...
+                              Processing neural pathways with enhanced thinking...
                             </div>
                           )}
                         </div>
@@ -274,7 +286,7 @@ export default function CyberMindChat() {
                   ref={inputRef}
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
-                  placeholder="Enter your query into the neural network..."
+                  placeholder="Enter your query into the enhanced neural network..."
                   disabled={isLoading}
                   className="terminal-input pr-12 h-12 font-fira-code text-cyan-400 placeholder:text-cyan-400/50"
                 />
@@ -304,10 +316,10 @@ export default function CyberMindChat() {
               <div className="flex items-center space-x-4 text-xs text-gray-500">
                 <span className="flex items-center space-x-1">
                   <Zap className="h-3 w-3" />
-                  <span>Powered by Gemini 2.0-Flash & Netlify</span>
+                  <span>Powered by Gemini 2.5 Pro with Thinking</span>
                 </span>
                 <Separator orientation="vertical" className="h-3" />
-                <span className="pulse-neon">Neural Link Active</span>
+                <span className="pulse-neon">Enhanced Neural Link Active</span>
               </div>
             </div>
           </div>
